@@ -5,8 +5,12 @@ export function all_products(limit, offset) {
     limit || 10,
     offset || 0,
   ]);
+  // return result
   return result;
 }
+
+
+
 
 export function search_product(search, limit, offset) {
   const result = db.query(
