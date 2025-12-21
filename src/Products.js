@@ -35,14 +35,6 @@ export async function stats() {
   };
 }
 
-export function search_product(search, limit, offset) {
-  const result = db.query(
-    "SELECT * FROM products WHERE product_name LIKE ? LIMIT ? OFFSET ?;",
-    [`%${search}%`, limit, offset]
-  );
-  return result;
-}
-
 export async function top_products(limit, offset) {
   const [result] = await db.query(
     "SELECT * FROM products WHERE rating >= 4.5 ORDER BY rating DESC LIMIT ? OFFSET ?;",
@@ -52,11 +44,50 @@ export async function top_products(limit, offset) {
 }
 
 export async function product_info(id) {
-  const [result] = await db.query(
-    "SELECT p.product_name,p.category,p.brand,p.price,p.rating FROM products p WHERE p.product_id=?",
+  const [productResult] = await db.query(
+    `SELECT 
+      p.product_id,
+      p.product_name,
+      p.category,
+      p.brand,
+      p.price,
+      p.rating
+    FROM products p
+    WHERE p.product_id = ?`,
     [id]
   );
-  return result;
+  if (productResult.length === 0) {
+    return [];
+  }
+  const product = productResult[0];
+
+  const [ventesResult] = await db.query(
+    `SELECT SUM(quantity) as nb_ventes
+     FROM order_items
+     WHERE product_id = ?`,
+    [id]
+  );
+  product.nb_ventes = ventesResult[0].nb_ventes;
+
+  const [consultationsResult] = await db.query(
+    `SELECT COUNT(*) as nb_consultations
+     FROM events
+     WHERE product_id = ? AND event_type = 'view'`,
+    [id]
+  );
+  product.nb_consultations = consultationsResult[0].nb_consultations;
+
+  const [avisResult] = await db.query(
+    `SELECT review_text, rating, review_date
+     FROM reviews
+     WHERE product_id = ?
+     ORDER BY review_date DESC
+     LIMIT 3`,
+    [id]
+  );
+  product.derniers_avis = avisResult;
+
+  return [product];
 }
 
 export async function popular_category() {
@@ -64,12 +95,5 @@ export async function popular_category() {
     "SELECT category,SUM(o.quantity) as q FROM products p JOIN order_items o ON p.product_id=o.product_id GROUP BY p.category ORDER BY q DESC;"
   );
   //category / quantity
-  return result;
-}
-
-export function search_for_category(search) {
-  const result = db.query("SELECT * FROM products WHERE category LIKE ?", [
-    search,
-  ]);
   return result;
 }

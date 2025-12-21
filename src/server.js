@@ -4,7 +4,6 @@ import express, { json } from "express";
 import {
   all_products,
   product_info,
-  search_product,
   top_products,
   popular_category,
 } from "./Products.js";
@@ -47,18 +46,6 @@ server.get("/api/allClients", async (req, res) => {
     parseInt(page ?? 1)
   );
   // console.log(data);
-  return res.json(data);
-});
-
-server.get("/api/searchProduct", async (req, res) => {
-  const { search, limit, offset } = req.query;
-
-  const data = await search_product(
-    search,
-    parseInt(limit || 10),
-    parseInt(offset || 0)
-  );
-
   return res.json(data);
 });
 
